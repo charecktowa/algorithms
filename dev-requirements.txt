@@ -1,0 +1,9 @@
+mypy
+
+ruff
+
+black
+
+ipykernel
+
+isort
