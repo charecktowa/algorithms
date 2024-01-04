@@ -7,8 +7,9 @@ generations = 1
 population_size = 6
 chromosome_length = 5
 tournament_size = population_size // 2
+mutation_rate = 0.05
 
-rng = np.random.default_rng()  # TODO: Change seed
+rng = np.random.default_rng(62)  # TODO: Change seed
 
 
 def fitness_function(population):
@@ -23,6 +24,16 @@ def selection(population, num_parents):
     tournament = rng.choice(population, num_parents)
     parent1, parent2 = tournament[np.argsort(fitness_function(tournament))[-2:]]
     return parent1, parent2, tournament
+
+
+def mutation(individual, mutation_rate):
+    mutated_individual = individual.copy()
+    mutated_indexes = []
+    for i in range(len(mutated_individual)):
+        if rng.random() < mutation_rate:
+            mutated_individual[i] = 1 - mutated_individual[i]
+            mutated_indexes.append(i)
+    return mutated_individual, mutated_indexes
 
 
 class GeneticAlgorithm(Scene):
@@ -187,7 +198,7 @@ class GeneticAlgorithm(Scene):
             self.play(FadeOut(crossover_line))
 
             # Shrink and move the parent_squares
-            self.play(parent_squares.animate.scale(0.2).to_edge(UP, buff=1))
+            self.play(parent_squares.animate.scale(0.35).to_edge(UP, buff=1))
             self.wait()
 
             # Animate the offspring
@@ -223,6 +234,50 @@ class GeneticAlgorithm(Scene):
                 ]
             )
             self.wait()
+
+            # Apply color changes to squares in offspring_squares
+            self.play(
+                *[
+                    square.animate.set_color(WHITE)
+                    for square in offspring_squares[0][crossover_point:]
+                ]
+                + [
+                    square.animate.set_color(WHITE)
+                    for square in offspring_squares[1][:crossover_point]
+                ]
+            )
+
+            print("Before mutation:")
+            print(child1)
+            print(child2)
+            child1, mutated1 = mutation(child1, mutation_rate)
+            child2, mutated2 = mutation(child2, mutation_rate)
+            print("After mutation:")
+            print(child1, mutated1)
+            print(child2, mutated2)
+
+            if mutated1 or mutated2:
+                offspring = [child1, child2]
+                self.play(
+                    *[
+                        Indicate(offspring_squares[0][index], color=RED)
+                        for index in mutated1
+                    ]
+                    + [
+                        Indicate(offspring_squares[1][index], color=RED)
+                        for index in mutated2
+                    ]
+                )
+
+                for i, mutated_indices in enumerate([mutated1, mutated2]):
+                    for index in mutated_indices:
+                        number = Text(str(offspring[i][index]))
+                        offspring_squares[i][index].remove(
+                            offspring_squares[i][index][1]
+                        )
+                        number.move_to(offspring_squares[i][index])
+                        offspring_squares[i][index].add(number)
+                self.wait()
 
 
 if __name__ == "__main__":
