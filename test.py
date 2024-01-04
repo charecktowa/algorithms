@@ -119,7 +119,6 @@ class GeneticAlgorithm(Scene):
         num_parents = population_size // 2
 
         parents = selection(numbers, fitness_values, num_parents)
-        print(len(parents))
 
         # Show the parents
         parents_group = VGroup()
@@ -139,11 +138,12 @@ class GeneticAlgorithm(Scene):
 
         self.play(FadeOut(parents_group))
 
-        num_offsprings = 5 - num_parents
+        num_offsprings = population_size - num_parents
+        print(num_offsprings)
         offsprings = np.empty((num_offsprings, parents.shape[1]))
 
         # TODO change to num_offsprings
-        for i in range(1):
+        for iteration in range(num_offsprings):
             # Select two random parents
             random_indices = np.random.randint(0, parents.shape[0], size=2)
             parent1, parent2 = parents[random_indices]
@@ -167,8 +167,8 @@ class GeneticAlgorithm(Scene):
             self.play(FadeIn(parents_group))
             self.wait()
 
+            ###################################### CROSSOVER ######################################
             crossover_point = 3  # TODO: np.random.randint(0, parents.shape[1])
-            print(crossover_point)
 
             # Animate the crossover point with a Line
             start = parents_group[0][crossover_point].get_corner(UP + RIGHT)
@@ -183,6 +183,10 @@ class GeneticAlgorithm(Scene):
             offspring = np.concatenate(
                 (parent1[:crossover_point], parent2[crossover_point:])
             )
+
+            offsprings[iteration] = offspring
+
+            print(f"I'm an offspring: {iteration}, {offspring}")
 
             # Apply color change to squares in parents_group[0] and parents_group[1] simultaneously
             self.play(
@@ -202,15 +206,31 @@ class GeneticAlgorithm(Scene):
             # Shrink and move the parents_group
             self.play(parents_group.animate.scale(0.2).to_edge(UP, buff=1))
 
+            offsprings[iteration] = offspring
             self.wait()
+            ###################################### CROSSOVER ######################################
 
-            # Create the offspring group
+        print(f"Howdy: {offsprings}")
+        # Show the offsprings
+        offsprings_group = VGroup()
+        for i, offspring in enumerate(offsprings):
+            offspring_squares = VGroup(
+                *[Square() for _ in range(chromosome_length)]
+            ).arrange(buff=0.5)
+            offspring_numbers = [Text(str(int(value))) for value in offspring]
+            for square, number in zip(offspring_squares, offspring_numbers):
+                number.move_to(square)
+                offspring_squares.add(square)
+                offspring_squares.add(number)
+                offsprings_group.add(offspring_squares)
+            offsprings_group.arrange(DOWN)
 
-            offsprings[i] = offspring
+        # Scale down the offsprings_group and position it below the parents_group
+        offsprings_group.scale(0.5)
+        offsprings_group.next_to(parents_group, DOWN, buff=0.5)
 
-        print(offsprings)
-        print("====")
-        print(np.concatenate((parents, offsprings)))
+        # Animate the appearance of the offsprings_group
+        self.play(FadeIn(offsprings_group))
 
 
 if __name__ == "__main__":
