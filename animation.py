@@ -112,7 +112,6 @@ class GeneticAlgorithm(Scene):
                 ]
             ).arrange(DOWN)
 
-            # Here we generate random numbers for each square
             for i, row in enumerate(tournament_squares):
                 for j, square in enumerate(row):
                     number = Text(str(tournament[i][j]))
@@ -135,16 +134,94 @@ class GeneticAlgorithm(Scene):
             # Show the parents
             parent_squares = VGroup(
                 *[
-                    VGroup(
-                        *[Square(side_length=0.8) for _ in range(chromosome_length)]
-                    ).arrange(buff=0.5)
+                    VGroup(*[Square() for _ in range(chromosome_length)]).arrange(
+                        buff=0.5
+                    )
                     for _ in range(2)  # Since there are only two parents
                 ]
             ).arrange(DOWN)
 
-            print(parent1, parent2)
+            parents = [parent1, parent2]
+            for i, row in enumerate(parent_squares):
+                for j, square in enumerate(row):
+                    number = Text(str(parents[i][j]))
+                    number.move_to(square)
+                    parent_squares[i][j].add(number)
 
             self.play(FadeIn(parent_squares))
+            self.wait()
+
+            # Perform crossover
+            crossover_point = rng.integers(1, chromosome_length)
+            child1 = np.concatenate(
+                (parent1[:crossover_point], parent2[crossover_point:])
+            )
+            child2 = np.concatenate(
+                (parent2[:crossover_point], parent1[crossover_point:])
+            )
+
+            # Animate crossover line
+            crossover_line = Line(
+                start=parent_squares[0][crossover_point - 1].get_corner(UP + RIGHT),
+                end=parent_squares[1][crossover_point - 1].get_corner(DOWN + RIGHT),
+                color=RED,
+                stroke_width=11,
+            )
+            crossover_line.shift(RIGHT * 0.2)
+            self.play(Create(crossover_line))
+            self.wait()
+
+            # Apply color changes to squares in parent_squares
+            self.play(
+                *[
+                    square.animate.set_color(RED)
+                    for square in parent_squares[0][crossover_point:]
+                ]
+                + [
+                    square.animate.set_color(RED)
+                    for square in parent_squares[1][:crossover_point]
+                ]
+            )
+            self.wait()
+
+            self.play(FadeOut(crossover_line))
+
+            # Shrink and move the parent_squares
+            self.play(parent_squares.animate.scale(0.2).to_edge(UP, buff=1))
+            self.wait()
+
+            # Animate the offspring
+            offspring_squares = VGroup(
+                *[
+                    VGroup(*[Square() for _ in range(chromosome_length)]).arrange(
+                        buff=0.5
+                    )
+                    for _ in range(2)  # Since there are only two offsprings
+                ]
+            ).arrange(DOWN)
+
+            offspring = [child1, child2]
+            for i, row in enumerate(offspring_squares):
+                for j, square in enumerate(row):
+                    number = Text(str(offspring[i][j]))
+                    number.move_to(square)
+                    offspring_squares[i][j].add(number)
+
+            offspring_squares.scale(0.8).to_edge(DOWN, buff=1)
+            self.play(FadeIn(offspring_squares))
+            self.wait()
+
+            # Apply color changes to squares in offspring_squares
+            self.play(
+                *[
+                    square.animate.set_color(BLUE)
+                    for square in offspring_squares[0][crossover_point:]
+                ]
+                + [
+                    square.animate.set_color(BLUE)
+                    for square in offspring_squares[1][:crossover_point]
+                ]
+            )
             self.wait()
 
 
