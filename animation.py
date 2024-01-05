@@ -4,13 +4,13 @@ import numpy as np
 
 from manim import *
 
-generations = 1
+generations = 5
 population_size = 6
 chromosome_length = 5
 tournament_size = population_size // 2
 mutation_rate = 0.05
 
-rng = np.random.default_rng(62)  # TODO: Change seed
+rng = np.random.default_rng(62)
 
 
 def fitness_function(population):
@@ -293,9 +293,9 @@ class GeneticAlgorithm(Scene):
             print("printing...")
             population_squares = VGroup(
                 *[
-                    VGroup(*[Square() for _ in range(chromosome_length)]).arrange(
-                        buff=0.5
-                    )
+                    VGroup(
+                        *[Square(side_length=0.85) for _ in range(chromosome_length)]
+                    ).arrange(buff=0.5)
                     for _ in range(population_size)
                 ]
             ).arrange(DOWN * 0.38)
@@ -308,6 +308,8 @@ class GeneticAlgorithm(Scene):
 
             self.play(FadeIn(population_squares))
             self.wait()
+
+            self.play(FadeOut(population_squares))
 
 
 if __name__ == "__main__":
