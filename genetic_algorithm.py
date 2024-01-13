@@ -1,11 +1,10 @@
-from hmac import new
 import os
 import numpy as np
 
 from manim import *
 
-generations = 5
-population_size = 6
+generations = 2
+population_size = 5
 chromosome_length = 5
 tournament_size = population_size // 2
 mutation_rate = 0.05
@@ -36,6 +35,28 @@ def mutation(individual, mutation_rate):
             mutated_indexes.append(i)
     return mutated_individual, mutated_indexes
 
+def create_squares_with_text(data, side_length=0.8, buff=0.5, color=WHITE):
+    """
+    Create a group of squares with text.
+
+    :param data: A 2D list of data to display in the squares.
+    :param side_length: The side length of each square.
+    :param buff: The buffer space between squares.
+    :param color: The color of the squares.
+    :return: A VGroup of squares with text.
+    """
+    squares_group = VGroup()
+    for row_data in data:
+        row_group = VGroup(
+            *[Square(side_length=side_length, color=color) for _ in row_data]
+        ).arrange(buff=buff)
+        for square, number in zip(row_group, row_data):
+            text = Text(str(number)).move_to(square)
+            square.add(text)
+        squares_group.add(row_group)
+    squares_group.arrange(DOWN * buff)
+
+    return squares_group
 
 class GeneticAlgorithm(Scene):
     def construct(self):
@@ -82,20 +103,7 @@ class GeneticAlgorithm(Scene):
 
             while len(new_population) < population_size:
                 # Here we draw the squares corresponding to the population
-                population_squares = VGroup(
-                    *[
-                        VGroup(
-                            *[Square(side_length=0.8) for _ in range(chromosome_length)]
-                        ).arrange(buff=0.5)
-                        for _ in range(population_size)
-                    ]
-                ).arrange(DOWN * 0.38)
-
-                for i, row in enumerate(population_squares):
-                    for j, square in enumerate(row):
-                        number = Text(str(population[i][j]))
-                        number.move_to(square)
-                        population_squares[i][j].add(number)
+                population_squares = create_squares_with_text(population)
 
                 self.play(FadeIn(population_squares))
                 self.wait()
@@ -117,20 +125,7 @@ class GeneticAlgorithm(Scene):
                 parent1, parent2, tournament = selection(population, tournament_size)
 
                 # Show who are going to compete
-                tournament_squares = VGroup(
-                    *[
-                        VGroup(
-                            *[Square(side_length=0.8) for _ in range(chromosome_length)]
-                        ).arrange(buff=0.5)
-                        for _ in range(tournament_size)
-                    ]
-                ).arrange(DOWN)
-
-                for i, row in enumerate(tournament_squares):
-                    for j, square in enumerate(row):
-                        number = Text(str(tournament[i][j]))
-                        number.move_to(square)
-                        tournament_squares[i][j].add(number)
+                tournament_squares = create_squares_with_text(tournament)
 
                 self.play(FadeIn(tournament_squares))
                 self.wait()

@@ -1,94 +1,80 @@
-import numpy as np
+import random
 
 
-# Define the fitness function
-def fitness_function(population):
-    return np.sum(population, axis=1)
+# One Max Problem fitness function
+def fitness(individual):
+    return sum(individual)
 
 
-# Define the selection operator (tournament selection)
-def selection(population, fitness_values, num_parents):
-    parents = np.empty((num_parents, population.shape[1]))
-    for i in range(num_parents):
-        # Select two random individuals
-        random_indices = np.random.randint(0, population.shape[0], size=2)
-        tournament = fitness_values[random_indices]
-        # Select the individual with the highest fitness
-        winner_index = np.argmax(tournament)
-        parents[i] = population[random_indices[winner_index]]
-    return parents
+# Generate a random individual
+def generate_individual(length):
+    return [random.randint(0, 1) for _ in range(length)]
 
 
-# Define the crossover operator (single-point crossover)
-def crossover(parents, num_offsprings):
-    offsprings = np.empty((num_offsprings, parents.shape[1]))
-    for i in range(num_offsprings):
-        # Select two random parents
-        random_indices = np.random.randint(0, parents.shape[0], size=2)
-        parent1, parent2 = parents[random_indices]
-        # Select a random crossover point
-        crossover_point = np.random.randint(0, parents.shape[1])
-        # Create the offspring by combining the parents' genes
-        offspring = np.concatenate(
-            (parent1[:crossover_point], parent2[crossover_point:])
-        )
-        offsprings[i] = offspring
-    return offsprings
+# Generate a population of random individuals
+def generate_population(population_size, individual_length):
+    return [generate_individual(individual_length) for _ in range(population_size)]
 
 
-# Define the mutation operator (bit-flip mutation)
-def mutation(offsprings, mutation_rate):
-    for i in range(offsprings.shape[0]):
-        for j in range(offsprings.shape[1]):
-            # Generate a random number between 0 and 1
-            random_number = np.random.random()
-            # If the random number is less than the mutation rate, flip the bit
-            if random_number < mutation_rate:
-                offsprings[i, j] = 1 - offsprings[i, j]
-    return offsprings
+# Select parents for crossover using tournament selection
+def tournament_selection(population, tournament_size):
+    tournament = random.sample(population, tournament_size)
+    return max(tournament, key=fitness)
 
 
-# Define the main Genetic Algorithm function
+# Perform single-point crossover
+def crossover(parent1, parent2):
+    crossover_point = random.randint(1, len(parent1) - 1)
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+    return child1, child2
+
+
+# Perform mutation by flipping a random bit
+def mutate(individual, mutation_rate):
+    mutated_individual = individual.copy()
+    for i in range(len(mutated_individual)):
+        if random.random() < mutation_rate:
+            mutated_individual[i] = 1 - mutated_individual[i]
+    return mutated_individual
+
+
+# Genetic algorithm for the One Max Problem
 def genetic_algorithm(
-    population_size, chromosome_length, num_generations, mutation_rate
+    population_size, individual_length, tournament_size, mutation_rate, generations
 ):
-    # Initialize the population randomly
-    population = np.random.randint(0, 2, size=(population_size, chromosome_length))
+    population = generate_population(population_size, individual_length)
 
-    for generation in range(num_generations):
-        # Evaluate the fitness of the population
-        fitness_values = fitness_function(population)
+    for _ in range(generations):
+        new_population = []
 
-        # Select the parents for reproduction
-        num_parents = population_size // 2
-        parents = selection(population, fitness_values, num_parents)
+        while len(new_population) < population_size:
+            parent1 = tournament_selection(population, tournament_size)
+            parent2 = tournament_selection(population, tournament_size)
 
-        print(parents, len(parents))
+            child1, child2 = crossover(parent1, parent2)
 
-        # Create the offsprings through crossover
-        num_offsprings = population_size - num_parents
-        offsprings = crossover(parents, num_offsprings)
+            child1 = mutate(child1, mutation_rate)
+            child2 = mutate(child2, mutation_rate)
 
-        print(offsprings)
+            new_population.append(child1)
+            new_population.append(child2)
 
-        # Apply mutation to the offsprings
-        offsprings = mutation(offsprings, mutation_rate)
+        population = new_population
 
-        # Create the new population by combining the parents and offsprings
-        population = np.concatenate((parents, offsprings))
-
-    # Return the best individual (solution)
-    best_individual_index = np.argmax(fitness_function(population))
-    return population[best_individual_index]
+    best_individual = max(population, key=fitness)
+    return best_individual
 
 
 # Example usage
-population_size = 6
-chromosome_length = 5
-num_generations = 1
+population_size = 100
+individual_length = 10
+tournament_size = 5
 mutation_rate = 0.01
+generations = 100
 
 best_individual = genetic_algorithm(
-    population_size, chromosome_length, num_generations, mutation_rate
+    population_size, individual_length, tournament_size, mutation_rate, generations
 )
 print("Best individual:", best_individual)
+print("Fitness:", fitness(best_individual))
