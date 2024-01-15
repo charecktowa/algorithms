@@ -1,4 +1,3 @@
-import os
 import numpy as np
 
 from manim import *
@@ -35,16 +34,8 @@ def mutation(individual, mutation_rate):
             mutated_indexes.append(i)
     return mutated_individual, mutated_indexes
 
-def create_squares_with_text(data, side_length=0.8, buff=0.5, color=WHITE):
-    """
-    Create a group of squares with text.
 
-    :param data: A 2D list of data to display in the squares.
-    :param side_length: The side length of each square.
-    :param buff: The buffer space between squares.
-    :param color: The color of the squares.
-    :return: A VGroup of squares with text.
-    """
+def create_squares_with_text(data, side_length=0.8, buff=0.5, color=WHITE):
     squares_group = VGroup()
     for row_data in data:
         row_group = VGroup(
@@ -57,6 +48,7 @@ def create_squares_with_text(data, side_length=0.8, buff=0.5, color=WHITE):
     squares_group.arrange(DOWN * buff)
 
     return squares_group
+
 
 class GeneticAlgorithm(Scene):
     def construct(self):
@@ -105,11 +97,20 @@ class GeneticAlgorithm(Scene):
                 # Here we draw the squares corresponding to the population
                 population_squares = create_squares_with_text(population)
 
-                self.play(FadeIn(population_squares))
+                text = Text("Population").scale(0.5).to_corner(DOWN + LEFT)
+                self.play(FadeIn(text, population_squares))
                 self.wait()
+                self.play(FadeOut(text))
 
                 # Now we calculate the fitness of each individual
                 fitness = fitness_function(population)
+                text = (
+                    Text("Calculamos el fitness de la problación")
+                    .scale(0.5)
+                    .to_corner(DOWN + LEFT)
+                )
+                self.play(FadeIn(text))
+
                 fitness_labels = [Text("Fitness: " + str(fit)) for fit in fitness]
                 for group, label in zip(population_squares, fitness_labels):
                     label.next_to(group, RIGHT)
@@ -117,7 +118,7 @@ class GeneticAlgorithm(Scene):
                 self.wait()
 
                 self.play(
-                    FadeOut(population_squares),
+                    FadeOut(text, population_squares),
                     *[FadeOut(label) for label in fitness_labels],
                 )
 
@@ -125,9 +126,10 @@ class GeneticAlgorithm(Scene):
                 parent1, parent2, tournament = selection(population, tournament_size)
 
                 # Show who are going to compete
+                text = Text("Selección de padres").scale(0.5).to_corner(DOWN + LEFT)
                 tournament_squares = create_squares_with_text(tournament)
 
-                self.play(FadeIn(tournament_squares))
+                self.play(FadeIn(text, tournament_squares))
                 self.wait()
 
                 # Indicate the parents TODO: if it repeats dont show it again
@@ -138,7 +140,7 @@ class GeneticAlgorithm(Scene):
                         self.play(Indicate(tournament_squares[i]))
                         self.wait()
 
-                self.play(FadeOut(tournament_squares))
+                self.play(FadeOut(text, tournament_squares))
 
                 # Show the parents
                 parent_squares = VGroup(
@@ -157,7 +159,8 @@ class GeneticAlgorithm(Scene):
                         number.move_to(square)
                         parent_squares[i][j].add(number)
 
-                self.play(FadeIn(parent_squares))
+                text = Text("Padres").scale(0.5).to_corner(DOWN + LEFT)
+                self.play(FadeIn(text, parent_squares))
                 self.wait()
 
                 # Perform crossover
@@ -176,7 +179,11 @@ class GeneticAlgorithm(Scene):
                     color=RED,
                     stroke_width=11,
                 )
+
+                self.play(FadeOut(text))
+                text = Text("Cruza de padres").scale(0.5).to_corner(DOWN + LEFT)
                 crossover_line.shift(RIGHT * 0.2)
+                self.play(FadeIn(text))
                 self.play(Create(crossover_line))
                 self.wait()
 
@@ -193,7 +200,7 @@ class GeneticAlgorithm(Scene):
                 )
                 self.wait()
 
-                self.play(FadeOut(crossover_line))
+                self.play(FadeOut(crossover_line, text))
 
                 # Shrink and move the parent_squares
                 self.play(parent_squares.animate.scale(0.35).to_edge(UP, buff=1))
@@ -217,7 +224,8 @@ class GeneticAlgorithm(Scene):
                         offspring_squares[i][j].add(number)
 
                 offspring_squares.scale(0.8).to_edge(DOWN, buff=1)
-                self.play(FadeIn(offspring_squares))
+                text = Text("Hijos").scale(0.5).to_corner(DOWN + LEFT)
+                self.play(FadeIn(text, offspring_squares))
                 self.wait()
 
                 # Apply color changes to squares in offspring_squares
@@ -248,7 +256,9 @@ class GeneticAlgorithm(Scene):
                 child1, mutated1 = mutation(child1, mutation_rate)
                 child2, mutated2 = mutation(child2, mutation_rate)
 
+                self.play(FadeOut(text))
                 if mutated1 or mutated2:
+                    text = Text("Mutación").scale(0.5).to_corner(DOWN + LEFT)
                     offspring = [child1, child2]
                     self.play(
                         *[
@@ -270,6 +280,7 @@ class GeneticAlgorithm(Scene):
                             number.move_to(offspring_squares[i][index])
                             offspring_squares[i][index].add(number)
                     self.wait()
+                    self.play(FadeOut(text))
 
                 # Add the offspring to the new population
                 new_population.append(child1)
@@ -285,7 +296,6 @@ class GeneticAlgorithm(Scene):
             population = new_population
 
             # Show final population from this generation
-            print("printing...")
             population_squares = VGroup(
                 *[
                     VGroup(
@@ -301,10 +311,33 @@ class GeneticAlgorithm(Scene):
                     number.move_to(square)
                     population_squares[i][j].add(number)
 
-            self.play(FadeIn(population_squares))
+            text = Text("Nueva población").scale(0.5).to_corner(DOWN + LEFT)
+            self.play(FadeIn(text, population_squares))
             self.wait()
 
-            self.play(FadeOut(population_squares))
+            self.play(FadeOut(text, population_squares))
+
+        # Show final population
+        self.play(FadeOut(*[mob for mob in self.mobjects]))
+
+        best = np.argmax(fitness_function(population))
+        best_individual = population[best]
+
+        best_squares = VGroup(
+            *[
+                VGroup(*[Square() for _ in range(chromosome_length)]).arrange(buff=0.5)
+                for _ in range(1)
+            ]
+        ).arrange(DOWN)
+        for i, row in enumerate(best_squares):
+            for j, square in enumerate(row):
+                number = Text(str(best_individual[j]))
+                number.move_to(square)
+                best_squares[i][j].add(number)
+
+        text = Text("Mejor individuo").scale(0.5).to_corner(DOWN + LEFT)
+        self.play(FadeIn(text, best_squares))
+        self.wait()
 
 
 if __name__ == "__main__":
